@@ -9,6 +9,13 @@ from subprocess import Popen, PIPE, call
 #set up globally scoped variables for telemetry
 move_adder = {'x': 0.0, 'y': 0.0, 'z': 0.0}
 present_position = {'x': 0.0, 'y': 0.0, 'z': 0.0}
+macros = {ord('p') : {'name':'resist block and cam next','keys':'pfc'},
+          ord('d') : {'name':'dance','keys':'pcpc'},
+          ord('s') : {'name':'solder paste block','keys':'pfc'}}
+filePath = "/home/smacbook/gcode/" # prefix for all filenames in files
+files = {ord('g') : {'name':'dispense green resist for tai crystal','filename':'tai1.g'},
+         ord('s') : {'name':'dispense solder paste for screw, post, tai','filename':'sold.g'},
+         ord('c') : {'name':'move plate to cook resist and return','filename':'cookr.g'}}
 commands = { 0 : {'key':'v','descr':'M106 turn fan on'},
              1 : {'key':'V','descr':'M107 turn fan off'},
              2 : {'key':'Q','descr':'Quit without saving'},
@@ -23,8 +30,10 @@ commands = { 0 : {'key':'v','descr':'M106 turn fan on'},
             11 : {'key':'2','descr':'set movement increment to 0.1'},
             12 : {'key':'3','descr':'set movement increment to 1.0'},
             13 : {'key':'4','descr':'set movement increment to 10.0'},
-            14 : {'key':'W','descr':'Write save file'},
-            15 : {'key':'R','descr':'Read save file'}}
+            14 : {'key':'f','descr':'print a g-code file'},
+            15 : {'key':'`','descr':'execute a macro'},
+            16 : {'key':'W','descr':'Write save file'},
+            17 : {'key':'R','descr':'Read save file'}}
 tools = {ord('e') : {'name':'extruder'}, ord('c') : {'name':'cam'}, ord('p') : {'name':'paste'}}
 for i in tools:
   for g in {'x','y','z'}:
@@ -119,6 +128,16 @@ def printSeeks():
   linenum += 1
   for i in tools:
     screen.addstr(linenum,0," tool {0}: {4}:  X{1} Y{2} Z{3}".format(chr(i),tools[i]['x'],tools[i]['y'],tools[i]['z'],tools[i]['name'].ljust(10)))
+    linenum += 1
+  screen.addstr(linenum,0,"press ` followed by a macro key to activate that macro")
+  linenum += 1
+  for i in macros:
+    screen.addstr(linenum,0," macro {0}: {1} = {2}".format(chr(i),macros[i]['name'],macros[i]['keys']))
+    linenum += 1
+  screen.addstr(linenum,0,"press f followed by a files key to print that g-code file")
+  linenum += 1
+  for i in files:
+    screen.addstr(linenum,0," files {0}: {1} = {2}".format(chr(i),files[i]['name'],files[i]['filename']))
     linenum += 1
   linenum = 9
   screen.addstr(linenum,midX,"press letter of a command (arrow keys and pgup/pgdn to move machine)")
@@ -215,7 +234,7 @@ while True:
   elif press == ord("H"):
     present_position['z'] = 0
     printInfo( "set Z axis to home at present height")
-  
+
   elif press == ord("s"):
     printInfo("seek to which stored position? 0-9  ")
     press = screen.getch()
@@ -250,7 +269,7 @@ while True:
     moment = screen.getstr()
     printInfo("G"+moment)
     ptr.cmnd("G{0}".format(moment))
-  
+
   elif press == ord("m"):
     moment = screen.getstr()
     printInfo("M"+moment)
@@ -266,9 +285,22 @@ while True:
     increment = 10.0
 
   elif press == ord("f"):
-    filename = "sline.g"
-    printInfo("Printing G-code file "+filename)
-    printFile(filename,ptr)
-    printInfo("Finished printing G-code file "+filename)
+    printInfo("Which file do you want to print?")
+    press = screen.getch()
+    if press in files:
+      filename = filePath+files[press]['filename']
+      printInfo("Printing G-code file "+filename)
+      #printFile(filename,ptr)
+      printInfo("Finished printing G-code file "+filename)
+    else:
+      printInfo("not a valid files key")
+
+  elif press == ord("`"):
+    printInfo("Which macro to execute?")
+    press = screen.getch()
+    if press in macros:
+      printInfo(macros[press]['name'])
+    else:
+      printInfo("not a valid macro key")
 
 curses.endwin() #there's no place like home
